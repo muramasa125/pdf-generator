@@ -1,0 +1,71 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>pdf generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <textarea name="json" id="json" cols="200" rows="50" v-model="stringData"　placeholder="{'pdfdata': '', 'filename':''}"></textarea>
+      <button v-on:click="createPdf()">Generate!</button>
+    </div>
+    <script>
+      var app = new Vue({
+        el: '#app',
+        data: {
+          stringData: '',
+          pdfdata: ''
+        },
+        methods: {
+          createPdf: function () {
+            const mime_ctype = "application/pdf";
+            let json = ''
+            try {
+              const stringData = this.stringData.replace(/\r?\n/g, '');
+              json = JSON.parse(this.stringData);              
+            } catch (error) {
+              alert('It does not seem to be json format data.');
+              return false;
+            }
+            const fileName = json['filename']
+            const pdfData = json['pdfdata']
+            console.log(pdfData)
+            const blob = this.toBlob(pdfData, mime_ctype);
+            if (window.navigator.msSaveBlob) {
+              window.navigator.msSaveOrOpenBlob(blob, fileName)
+            } else {
+              const url = URL.createObjectURL(new Blob([blob], {type: mime_ctype}));
+              const linkEl = document.createElement('a');
+              linkEl.href = url;
+              linkEl.setAttribute('download', fileName);
+              document.body.appendChild(linkEl);
+              linkEl.click();
+
+              URL.revokeObjectURL(url);
+              linkEl.parentNode.removeChild(linkEl);              
+            }
+          },
+          toBlob: function (base64, mime_ctype) {
+            // 日本語の文字化けに対処するためBOMを作成する。
+            const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    
+            const bin = atob(base64.replace(/^.*,/, ''));
+            const buffer = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) {
+                buffer[i] = bin.charCodeAt(i);
+            }
+            // Blobを作成
+            try {
+                const blob = new Blob([bom, buffer.buffer], {
+                    type: mime_ctype,
+                });
+                return blob;
+            } catch (e) {
+                return false;
+            }
+          }
+        }
+      })
+    </script>        
+  </body>
+</html>
